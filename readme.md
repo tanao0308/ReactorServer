@@ -14,5 +14,9 @@
 ## 问题和解决方案
 
 ## 参考资料
-
-
+### 书籍
+- Resources/Linux高性能服务器编程.pdf
+### 在线资源
+- 
+### GitHub项目
+- https://github.com/StormrageZ/Server 
