@@ -7,10 +7,13 @@
 - [目录结构](#目录结构)
 
 ## 目录结构
-/select-server # select()实现的基础回声服务器
+
+resources/ C++服务器相关资料
+
+select-server/ select()实现的基础回声服务器
 
 ## 参考资料
 ### 书籍
-- Resources/Linux高性能服务器编程.pdf
+- resources/Linux高性能服务器编程.pdf
 ### GitHub项目
 - https://github.com/StormrageZ/Server 
