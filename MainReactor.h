@@ -48,7 +48,7 @@ public:
 
 private:
     int server_socket;
-	vector<SubReactor*> sub_reactor;
+	std::vector<SubReactor*> sub_reactor;
     void connect()
     {
         server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -91,6 +91,11 @@ private:
 		}
 		int sub_id = choose_sub();
 		sub_reactor[sub_id]->handle_client(client_socket);
+	}
+
+	int choose_sub()
+	{
+		return rand()%(int)sub_reactor.size();
 	}
 
 };

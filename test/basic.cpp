@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../mainReactor.h"
+#include "../MainReactor.h"
 int main()
 {
     MainReactor* main_reactor = new MainReactor();
