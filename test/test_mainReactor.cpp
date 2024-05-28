@@ -1,8 +1,8 @@
 #include <iostream>
-#include "../mainReactor.cpp"
+#include "../mainReactor.h"
 int main()
 {
-    MainReactor main_reactor = new MainReactor();
-    main_reactor.start();
+    MainReactor* main_reactor = new MainReactor();
+    main_reactor->start();
     return 0;
 }
