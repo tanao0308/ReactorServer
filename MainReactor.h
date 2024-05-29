@@ -9,37 +9,52 @@
 #include <unistd.h>
 #include <cstring>
 #include <arpa/inet.h>
+#include "ThreadPool.h"
 #include "SubReactor.h"
 
 
 class MainReactor
 {
 public:
-    MainReactor() {}
+    MainReactor(int thread_num=5, int sub_reactor_num=3): thread_pool(ThreadPool::getInstance(thread_num))
+	{
+		for(int i=0; i<sub_reactor_num; ++i)
+		{
+			// 直接在构造函数内创建reactor number个线程，并在子线程内开启子reactor的事件循环
+			SubReactor* sub_reactor = new SubReactor();
+			sub_reactors.push_back(sub_reactor);
+			/*
+			lambda:
+			[capture list] (parameter list) -> return type { body }
+
+			capture list：捕获列表，用于捕获外部变量以供 lambda 函数内部使用。捕获列表可以为空，也可以包含一个或多个外部变量的引用或拷贝。捕获列表使用方括号 [] 包围起来。
+			parameter list：参数列表，与普通函数的参数列表类似，用于传递参数给 lambda 函数。参数列表可以为空，也可以包含一个或多个参数，使用小括号 () 包围起来。
+			return type：返回类型，指定 lambda 函数的返回类型。可以省略返回类型，编译器会自动推断返回类型。使用箭头 -> 指定返回类型。
+			body：函数体，包含 lambda 函数的实际执行代码块。使用大括号 {} 包围起来。
+			*/
+			thread_pool.submit([this, sub_reactor]() { sub_reactor->start(); });
+		}
+	}
+
     ~MainReactor()
 	{
 		for(auto sub_reactor : sub_reactors)
 			delete sub_reactor;
 	}
+
     void start()
     {
-        // connect to port 33333 and listen to the port
-        connect();
+        init_main_server();
 
         // 接收来自客户端的连接并将连接传递给subreactor
         while(true)
         {
-			int client_socket accept_client();
-           
-            if (client_socket < 0)
+			int client_socket = get_client();
+			if (client_socket < 0)
 			{
-                std::cerr << "Failed to accept connection" << std::endl;
-                continue;
-            }
-            
-            std::cout << "Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
-            
-            // 这里可以将client_socket传递给subreactor进行处理
+				std::cerr << "Failed to accept connection" << std::endl;
+				continue;
+			}
             handle_client(client_socket);
         }
     }
@@ -47,7 +62,10 @@ public:
 private:
     int server_socket;
 	std::vector<SubReactor*> sub_reactors;
-    void connect()
+	ThreadPool& thread_pool;
+	
+	// 将主线程连接到某个端口进行初始化
+    void init_main_server()
     {
         server_socket = socket(AF_INET, SOCK_STREAM, 0);
         if (server_socket < 0)
@@ -79,26 +97,26 @@ private:
         std::cout << "Server is listening on port 33333" << std::endl;
     }
 
-	int accept_client()
+	// 阻塞地accept客户端的连接请求
+	int get_client()
 	{
 		struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
         int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
+        std::cout << "Connection accepted from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << std::endl;
 		return client_socket;
 	}
 
+	// 将新连接的客户端套接字交给子reactor处理
 	void handle_client(int client_socket)
 	{
 		std::cout<<"handling client..."<<std::endl;
-		if(sub_reactors.size() < 3)
-		{
-			sub_reactors.push_back(new SubReactor());
-			sub_reactors.back()->start();
-		}
 		int sub_id = choose_sub();
-		sub_reactors[sub_id]->handle_client(client_socket);
+		sub_reactors[sub_id]->add_socket(client_socket);
+		std::cout<<"added socket."<<std::endl;
 	}
 
+	// 随机选择一个子reactor(todo: 负载均衡)
 	int choose_sub()
 	{
 		return rand()%(int)sub_reactors.size();

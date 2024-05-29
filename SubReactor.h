@@ -29,7 +29,7 @@ public:
     void execute_callback(int fd)
 	{
         if (callbacks.find(fd) != callbacks.end())
-            thread_pool.submit(callbacks[fd]());
+            thread_pool.submit(callbacks[fd]);
     }
 
 private:
@@ -63,19 +63,22 @@ public:
             if (event_count == -1) 
                 throw std::runtime_error("Epoll wait error");
             for (int i=0; i<event_count; ++i) 
-                handle_event(events[i].data.fd);
+                handle_socket(events[i].data.fd);
         }
 	}
 
-	// 接收主reactor分配的客户端套接字
-	void handle_client(int client_socket)
+	// 加入新的客户端套接字
+	void add_socket(int client_socket)
 	{
-		// epoll注册新套接字
-		register_socket(client_socket);
+        epoll_event event;
+        event.data.fd = client_socket;
+        event.events = EPOLLIN;
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket, &event) == -1) 
+            throw std::runtime_error("Failed to add socket to epoll");
 	}
 
 	// 处理某个监听的套接字的事件
-	void handle_event(int event_fd)
+	void handle_socket(int event_fd)
 	{
 		callback_manager.execute_callback(event_fd);
 	}
@@ -84,16 +87,6 @@ private:
 	int epoll_fd;
 	static const int MAX_EVENTS = 10;
 	CallbackManager callback_manager;
-
-	// epoll注册套接字封装
-	void register_socket(int client_socket)
-	{
-        epoll_event event;
-        event.data.fd = client_socket;
-        event.events = EPOLLIN;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket, &event) == -1) 
-            throw std::runtime_error("Failed to add socket to epoll");
-	}
 
 	// epoll移除套接字封装 
 	void remove_socket(int client_socket)
