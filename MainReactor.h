@@ -18,8 +18,8 @@ public:
     MainReactor() {}
     ~MainReactor()
 	{
-		for(int i=0; i<(int)sub_reactor.size(); ++i)
-			delete sub_reactor[i];
+		for(auto sub_reactor : sub_reactors)
+			delete sub_reactor;
 	}
     void start()
     {
@@ -29,10 +29,8 @@ public:
         // 接收来自客户端的连接并将连接传递给subreactor
         while(true)
         {
-            struct sockaddr_in client_addr;
-            socklen_t client_len = sizeof(client_addr);
-            int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
-            
+			int client_socket accept_client();
+           
             if (client_socket < 0)
 			{
                 std::cerr << "Failed to accept connection" << std::endl;
@@ -48,7 +46,7 @@ public:
 
 private:
     int server_socket;
-	std::vector<SubReactor*> sub_reactor;
+	std::vector<SubReactor*> sub_reactors;
     void connect()
     {
         server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -81,21 +79,29 @@ private:
         std::cout << "Server is listening on port 33333" << std::endl;
     }
 
+	int accept_client()
+	{
+		struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
+		return client_socket;
+	}
+
 	void handle_client(int client_socket)
 	{
 		std::cout<<"handling client..."<<std::endl;
-		if(sub_reactor.size() < 3)
+		if(sub_reactors.size() < 3)
 		{
-			sub_reactor.push_back(new SubReactor());
-			sub_reactor.back()->start();
+			sub_reactors.push_back(new SubReactor());
+			sub_reactors.back()->start();
 		}
 		int sub_id = choose_sub();
-		sub_reactor[sub_id]->handle_client(client_socket);
+		sub_reactors[sub_id]->handle_client(client_socket);
 	}
 
 	int choose_sub()
 	{
-		return rand()%(int)sub_reactor.size();
+		return rand()%(int)sub_reactors.size();
 	}
 
 };
