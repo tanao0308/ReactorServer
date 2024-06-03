@@ -16,10 +16,11 @@
 class MainReactor
 {
 public:
-    MainReactor(int thread_num=5, int sub_reactor_num=3): thread_pool(ThreadPool::getInstance(thread_num))
+    MainReactor(int thread_num=5, int sub_reactor_num=2): thread_pool(ThreadPool::getInstance(thread_num))
 	{
 		for(int i=0; i<sub_reactor_num; ++i)
 		{
+			std::cout<<"creating sub_reactor"<<std::endl;
 			// 直接在构造函数内创建reactor number个线程，并在子线程内开启子reactor的事件循环
 			SubReactor* sub_reactor = new SubReactor();
 			sub_reactors.push_back(sub_reactor);

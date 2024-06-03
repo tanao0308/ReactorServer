@@ -34,19 +34,21 @@ public:
 	{
 		while (true) 
         {
+			std::cout<<"subreactor started"<<std::endl;
             int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
             if (event_count == -1) 
                 throw std::runtime_error("Epoll wait error");
-            for (int i=0; i<event_count; ++i) 
+            for (int i=0; i<event_count; ++i)
                 handle_socket((Request*)events[i].data.ptr);
-        }
+		}
 	}
 
 	// 加入新的客户端套接字
 	void add_socket(int client_socket)
 	{
+		std::cout<<"socket "<<client_socket<<" added"<<std::endl;
 		Request* request = new Request(client_socket);
-        __uint32_t epoll_events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+        __uint32_t epoll_events = EPOLLIN | EPOLLOUT | EPOLLET; // | EPOLLONESHOT;
 		/*
 		EPOLLIN: 表示对应的文件描述符可以读（包括对端套接字关闭）。
 		EPOLLET: 表示将 epoll 设置为边缘触发（Edge Triggered）模式。
@@ -63,6 +65,7 @@ private:
 	// 处理某个监听的套接字的事件
 	void handle_socket(Request* request)
 	{
+		std::cout<<"fd "<<request->getfd()<<" has message."<<std::endl;
 		request->run();
 	}
 

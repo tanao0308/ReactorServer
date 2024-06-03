@@ -17,6 +17,7 @@ class ThreadPool
 public:
 	static ThreadPool& getInstance(size_t thread_num = std::thread::hardware_concurrency())
 	{
+		std::cout<<"start thread pool"<<std::endl;
 		static ThreadPool instance(thread_num);
 		return instance;
 	}
