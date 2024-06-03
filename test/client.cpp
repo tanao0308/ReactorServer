@@ -50,21 +50,25 @@ void communicate_with_server(const std::string& server_ip, int server_port) {
 
     // 循环发送和接收消息
     while (true) {
-        // 发送消息
-        std::string message;
-        std::cout << "Enter message: ";
-        std::getline(std::cin, message);
 
-        if (message.empty()) {
-            std::cout << "Empty message, closing connection.\n";
-            break;
-        }
-
-        if (send(sockfd, message.c_str(), message.size(), 0) == -1) {
-            perror("send");
-            close(sockfd);
-            exit(EXIT_FAILURE);
-        }
+		while(true)
+		{
+			// 发送消息
+			std::string message;
+			std::cout << "Enter message: ";
+			std::getline(std::cin, message);
+	
+	        if (message.empty()) {
+	            std::cout << "finish this message\n";
+	            break;
+	        }
+	
+	        if (send(sockfd, message.c_str(), message.size(), 0) == -1) {
+	            perror("send");
+	            close(sockfd);
+	            exit(EXIT_FAILURE);
+	        }
+		}
 
 
 		std::cout<<"recving..."<<std::endl;

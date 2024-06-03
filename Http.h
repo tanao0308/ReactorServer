@@ -23,6 +23,9 @@ ssize_t readall(int fd, char *buffer, size_t count)
             break;
         bytes_left -= bytes_read;
         ptr += bytes_read;
+
+		*ptr='\0';
+		std::cout<<"Have received "<<buffer<<std::endl;
     }
 
     return (count - bytes_left); // 返回实际读取的字节数
@@ -55,7 +58,14 @@ void echo_response(int fd)
 {
 	char buffer[BUFFER_SIZE];
     ssize_t bytes_read, bytes_written, total_written;
-    
+   
+	bytes_read = read(fd, buffer, sizeof(buffer));
+	std::cout<<"finish reading"<<std::endl;
+	bytes_written = write(fd, buffer, bytes_read);
+	std::cout<<"finish writing"<<std::endl;
+
+
+/*
     bytes_read = readall(fd, buffer, sizeof(buffer));
     if (bytes_read == -1)
 	{
@@ -63,12 +73,13 @@ void echo_response(int fd)
         return;
     }
 
-	bytes_written = writeall(fd, buffer, sizeof bytes_read);
+	bytes_written = writeall(fd, buffer, bytes_read);
 	if (bytes_written != bytes_read)
 	{
 		perror("write");
 		return;
 	}
+*/
 }
 
 void http_response(int fd)

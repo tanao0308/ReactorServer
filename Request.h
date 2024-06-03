@@ -20,25 +20,13 @@ public:
 	}
 	void handle_request()
 	{
-		std::cout<<"begin to handle request"<<std::endl;
 		char buffer[BUFFER_SIZE];
 	    ssize_t bytes_read, bytes_written, total_written;
-	    
-	    bytes_read = readall(fd, buffer, sizeof(buffer));
-		std::cout<<"finish reading "<<bytes_read<<" of bytes"<<std::endl;
-	    if (bytes_read == -1)
-		{
-	        perror("read");
-	        return;
-	    }
-	
-		bytes_written = writeall(fd, buffer, bytes_read);
-		std::cout<<"finish writing "<<bytes_written<<" of bytes"<<std::endl;
-		if (bytes_written != bytes_read)
-		{
-			perror("write");
-			return;
-		}
+	   
+		bytes_read = read(fd, buffer, sizeof(buffer));
+		std::cout<<"finish reading"<<std::endl;
+		bytes_written = write(fd, buffer, bytes_read);
+		std::cout<<"finish writing"<<std::endl;
 	}
 
 private:
