@@ -8,49 +8,25 @@
 #include <stdexcept>
 #include <map>
 #include "ThreadPool.h"
+#include "Request.h"
+#include "Epoll.h"
 
 
-using EventCallback = std::function<void()>;
-
-class CallbackManager
+class SubReactor
 {
 public:
-	CallbackManager(int thread_num): thread_pool(ThreadPool::getInstance(thread_num)) {}
-    void add_callback(int fd, EventCallback callback)
-	{
-        callbacks[fd] = callback;
-    }
-
-    void remove_callback(int fd)
-	{
-        callbacks.erase(fd);
-    }
-
-    void execute_callback(int fd)
-	{
-        if (callbacks.find(fd) != callbacks.end())
-            thread_pool.submit(callbacks[fd]);
-    }
-
-private:
-    std::map<int, EventCallback> callbacks;
-	ThreadPool& thread_pool;
-};
-
-
-class SubReactor // todo
-{
-public:
-	SubReactor(int thread_num=5): callback_manager(thread_num)
+	SubReactor(int thread_num=5)
 	{
         epoll_fd = epoll_create1(0);
         if (epoll_fd == -1) 
             throw std::runtime_error("Failed to create epoll file descriptor");
+        events = new epoll_event[MAX_EVENTS];
     }
 
 	~SubReactor()
 	{
 		close(epoll_fd);
+		delete[] events;
 	}
 
 	// 子reactor的主进程
@@ -58,44 +34,37 @@ public:
 	{
 		while (true) 
         {
-            epoll_event events[MAX_EVENTS];
             int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
             if (event_count == -1) 
                 throw std::runtime_error("Epoll wait error");
             for (int i=0; i<event_count; ++i) 
-                handle_socket(events[i].data.fd);
+                handle_socket((Request*)events[i].data.ptr);
         }
 	}
 
 	// 加入新的客户端套接字
 	void add_socket(int client_socket)
 	{
-        epoll_event event;
-        event.data.fd = client_socket;
-        event.events = EPOLLIN;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket, &event) == -1) 
-            throw std::runtime_error("Failed to add socket to epoll");
-	}
-
-	// 处理某个监听的套接字的事件
-	void handle_socket(int event_fd)
-	{
-		callback_manager.execute_callback(event_fd);
+		Request* request = new Request(client_socket);
+        __uint32_t epoll_events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+		/*
+		EPOLLIN: 表示对应的文件描述符可以读（包括对端套接字关闭）。
+		EPOLLET: 表示将 epoll 设置为边缘触发（Edge Triggered）模式。
+		EPOLLONESHOT: 表示仅监听一次事件，当监听完此事件后，如果还需要继续监听这个 socket，需要再次加入到 epoll 监听队列中。
+		*/
+		epoll_add(epoll_fd, client_socket, static_cast<void*>(request), epoll_events);
 	}
 
 private:
 	int epoll_fd;
 	static const int MAX_EVENTS = 10;
-	CallbackManager callback_manager;
+	struct epoll_event* events;
 
-	// epoll移除套接字封装 
-	void remove_socket(int client_socket)
+	// 处理某个监听的套接字的事件
+	void handle_socket(Request* request)
 	{
-		if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_socket, nullptr) == -1) 
-            throw std::runtime_error("Failed to remove socket from epoll");
-        close(client_socket);
+		request->run();
 	}
-
 
 };
 
