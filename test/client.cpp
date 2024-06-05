@@ -51,17 +51,16 @@ void communicate_with_server(const std::string& server_ip, int server_port) {
     // 循环发送和接收消息
     while (true) {
 
+		std::cout<<"---------------------"<<std::endl;
 		while(true)
 		{
 			// 发送消息
 			std::string message;
-			std::cout << "Enter message: ";
+			std::cout << ">>>";
 			std::getline(std::cin, message);
 	
-	        if (message.empty()) {
-	            std::cout << "finish this message\n";
+	        if (message.empty())
 	            break;
-	        }
 	
 	        if (send(sockfd, message.c_str(), message.size(), 0) == -1) {
 	            perror("send");
@@ -77,7 +76,7 @@ void communicate_with_server(const std::string& server_ip, int server_port) {
         ssize_t bytes_received;
         while ((bytes_received = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
             buffer[bytes_received] = '\0';
-            std::cout << "Server: " << buffer << std::endl;
+            std::cout << "" << buffer << std::endl;
         }
 
         if (bytes_received == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
