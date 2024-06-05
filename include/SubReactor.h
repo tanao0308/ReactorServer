@@ -65,6 +65,8 @@ private:
 	// 处理某个监听的套接字的事件
 	void handle_socket(Request* request)
 	{
+		std::cout<<"===================================================================="<<std::endl;
+		std::cout<<"handling in thread "<<"I dont know..."<<std::endl;
 		std::cout<<"fd "<<request->getfd()<<" has message."<<std::endl;
 		request->run();
 	}

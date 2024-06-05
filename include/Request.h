@@ -20,13 +20,32 @@ public:
 	}
 	void handle_request()
 	{
-		char buffer[BUFFER_SIZE];
-	    ssize_t bytes_read, bytes_written, total_written;
-	   
-		bytes_read = read(fd, buffer, sizeof(buffer));
-		std::cout<<"finish reading"<<std::endl;
-		bytes_written = write(fd, buffer, bytes_read);
-		std::cout<<"finish writing"<<std::endl;
+		std::cout<<"--------------------"<<std::endl;
+        char buffer[1024];
+
+		// 接收客户端信息
+        int length;
+		if((length = recv_till(fd, buffer, '\n')) == -1)
+		{
+	        std::cout<<"error in client recv"<<std::endl;
+	        close(fd);
+	        exit(EXIT_FAILURE);
+	    }
+		buffer[length] = '\0';
+		std::cout<<"recv: "<<buffer<<" length is "<<length<<std::endl;
+		std::cout<<"finish recving from fd "<<fd<<std::endl;
+	
+		// 回复信息
+		int bytes_send;
+		if((bytes_send = send_all(fd, buffer, length)) != length)
+		{
+	        std::cout<<"error in client send"<<std::endl;
+	        close(fd);
+	        exit(EXIT_FAILURE);
+	    }
+		buffer[bytes_send] = '\0';
+		std::cout<<"send: "<<buffer<<" length is "<<length<<std::endl;
+		std::cout<<"finish sending to fd "<<fd<<std::endl;
 	}
 
 private:

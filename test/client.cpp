@@ -4,24 +4,12 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
-
-void set_nonblocking(int sockfd) {
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    if (flags == -1) {
-        perror("fcntl(F_GETFL)");
-        exit(EXIT_FAILURE);
-    }
-    flags |= O_NONBLOCK;
-    if (fcntl(sockfd, F_SETFL, flags) == -1) {
-        perror("fcntl(F_SETFL)");
-        exit(EXIT_FAILURE);
-    }
-}
+#include "../include/Http.h"
 
 void communicate_with_server(const std::string& server_ip, int server_port) {
     // 创建套接字
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd == -1) {
         perror("socket");
         exit(EXIT_FAILURE);
     }
@@ -32,62 +20,52 @@ void communicate_with_server(const std::string& server_ip, int server_port) {
     server_addr.sin_port = htons(server_port);
     if (inet_pton(AF_INET, server_ip.c_str(), &server_addr.sin_addr) <= 0) {
         perror("inet_pton");
-        close(sockfd);
+        close(server_fd);
         exit(EXIT_FAILURE);
     }
 
     // 连接到服务器
-    if (connect(sockfd, reinterpret_cast<struct sockaddr*>(&server_addr), sizeof(server_addr)) == -1) {
+    if (connect(server_fd, reinterpret_cast<struct sockaddr*>(&server_addr), sizeof(server_addr)) == -1) {
         perror("connect");
-        close(sockfd);
+        close(server_fd);
         exit(EXIT_FAILURE);
     }
 
     std::cout << "Connected to server\n";
 
-    // 设置非阻塞模式
-    set_nonblocking(sockfd);
-
     // 循环发送和接收消息
-    while (true) {
-
+    while (true)
+	{
 		std::cout<<"---------------------"<<std::endl;
-		while(true)
+		// 发送一行消息
+		std::string msg;
+		std::cout<<">>>";
+		std::getline(std::cin, msg);
+		msg.push_back('\n'); // getline会删除结尾的换行符
+//		std::cout<<"the message is "<<msg<<"length is "<<msg.size()<<std::endl;
+
+		if(send_all(server_fd, msg.c_str(), msg.size()) != msg.size())
 		{
-			// 发送消息
-			std::string message;
-			std::cout << ">>>";
-			std::getline(std::cin, message);
-	
-	        if (message.empty())
-	            break;
-	
-	        if (send(sockfd, message.c_str(), message.size(), 0) == -1) {
-	            perror("send");
-	            close(sockfd);
-	            exit(EXIT_FAILURE);
-	        }
-		}
+	        std::cout<<"error in client send"<<std::endl;
+	        close(server_fd);
+	        exit(EXIT_FAILURE);
+	    }
 
-
-		std::cout<<"recving..."<<std::endl;
         // 接收服务器响应
         char buffer[1024];
-        ssize_t bytes_received;
-        while ((bytes_received = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
-            buffer[bytes_received] = '\0';
-            std::cout << "" << buffer << std::endl;
-        }
-
-        if (bytes_received == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            perror("recv");
-            close(sockfd);
-            exit(EXIT_FAILURE);
-        }
+		int bytes_recv;
+		if((bytes_recv = recv_till(server_fd, buffer, '\n')) == -1)
+		{
+	        std::cout<<"error in client recv"<<std::endl;
+	        close(server_fd);
+	        exit(EXIT_FAILURE);
+	    }
+		buffer[bytes_recv] = '\0';
+		std::cout<<buffer<<std::endl;
     }
 
     // 关闭套接字
-    close(sockfd);
+    close(server_fd);
 }
 
 int main() {
