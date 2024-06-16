@@ -1,3 +1,9 @@
+/*
+服务器执行流程：
+1. 主线程收到连接请求，将连接套接字送到子reactor线程
+2. 子reactor线程监听套接字，当套接字状态发生变化后，根据状态的类型调用不同的处理函数，并使用线程池进行处理
+3. 线程池进行具体处理
+*/
 #ifndef MAIN_REACTOR_H
 #define MAIN_REACTOR_H
 
@@ -16,7 +22,7 @@
 class MainReactor
 {
 public:
-    MainReactor(int thread_num=5, int sub_reactor_num=2): thread_pool(ThreadPool::getInstance(thread_num))
+    MainReactor(int thread_num=8, int sub_reactor_num=2): thread_pool(ThreadPool::getInstance(thread_num))
 	{
 		for(int i=0; i<sub_reactor_num; ++i)
 		{
