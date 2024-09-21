@@ -12,11 +12,13 @@
 #include <memory>
 
 
+/*
+TODO 加入核心线程数、最大线程数和线程创建删除策略
+ */
 class ThreadPool
 {
 public:
-	static ThreadPool& getInstance(size_t thread_num = std::thread::hardware_concurrency())
-	{
+	static ThreadPool& getInstance(size_t thread_num = std::thread::hardware_concurrency()) {
 		std::cout<<"start thread pool"<<std::endl;
 		static ThreadPool instance(thread_num);
 		return instance;
@@ -26,8 +28,7 @@ public:
     
 	void operator=(ThreadPool const&) = delete;
 	
-	~ThreadPool()
-	{
+	~ThreadPool() {
 		{
 			std::unique_lock<std::mutex> lock(queue_mutex);
 			running = false;
@@ -39,8 +40,7 @@ public:
 	}
 	
 	template<class F, class... Args>
-	auto submit(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type>
-	{
+	auto submit(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type> {
 		using return_type = typename std::result_of<F(Args...)>::type;
 		auto task = std::make_shared<std::packaged_task<return_type()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 		std::future<return_type> res = task->get_future();
@@ -62,16 +62,13 @@ private:
 	std::vector<std::thread> workers;
 	std::queue<std::function<void()>> tasks; // 需互斥
 	
-	ThreadPool(size_t thread_num): running(1)
-	{
+	ThreadPool(size_t thread_num): running(1) {
 		for(int i=0; i<thread_num; ++i)
 			workers.emplace_back(std::thread([this] {this->ThreadWorker(); } ));
 	}
 
-	void ThreadWorker()
-	{
-		while(true)
-		{
+	void ThreadWorker() {
+		while(true) {
 			std::function<void()> task;
 			{
 				// 条件变量基础操作
